@@ -1,0 +1,23 @@
+def largest_rectangle_area(heights):
+    stack = []
+    max_area = 0
+    heights = [0] + heights + [0]
+    for i in range(len(heights)):
+        while stack and heights[i] < heights[stack[-1]]:
+            h = heights[stack.pop()]
+            w = i - stack[-1] - 1
+            max_area = max(max_area, h * w)
+        stack.append(i)
+    return max_area
+
+import random
+for _ in range(10):
+    n = random.randint(1, 105)
+    heights = [random.randint(0, 104) for _ in range(n)]
+    area = largest_rectangle_area(heights)
+    print(f"输入：{heights}\n输出：{area}\n")
+
+print("示例1测试：")
+print(largest_rectangle_area([2,1,5,6,2,3]))  # 输出10
+print("示例2测试：")
+print(largest_rectangle_area([2,4]))  # 输出4

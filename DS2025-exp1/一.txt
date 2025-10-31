@@ -1,0 +1,86 @@
+import random
+import time
+import math
+
+class Complex:
+    def __init__(self, real, imag):
+        self.real = real
+        self.imag = imag
+    
+    def __eq__(self, other):
+        return isinstance(other, Complex) and self.real == other.real and self.imag == other.imag
+    
+    def __hash__(self):
+        return hash((self.real, self.imag))
+    
+    def modulus(self):
+        return math.hypot(self.real, self.imag)  # 简化模计算
+    
+    def __lt__(self, other):
+        if not isinstance(other, Complex):
+            return False
+        mod1, mod2 = self.modulus(), other.modulus()
+        return mod1 < mod2 or (mod1 == mod2 and self.real < other.real)
+    
+    def __str__(self):
+        return f"{self.real}+{self.imag}i"
+
+# 归并排序（冒泡排序因效率低，仅保留核心对比逻辑）
+def merge_sort(arr):
+    if len(arr) <= 1:
+        return arr
+    mid = len(arr) // 2
+    left = merge_sort(arr[:mid])
+    right = merge_sort(arr[mid:])
+    return merge(left, right)
+
+def merge(left, right):
+    res, i, j = [], 0, 0
+    while i < len(left) and j < len(right):
+        if left[i] < right[j]:
+            res.append(left[i])
+            i += 1
+        else:
+            res.append(right[j])
+            j += 1
+    res.extend(left[i:] + right[j:])
+    return res
+
+def generate_vector(n):
+    return [Complex(random.randint(-10, 10), random.randint(-10, 10)) for _ in range(n)]
+
+def unique_vector(vector):
+    return list(dict.fromkeys(vector))  # 利用字典去重
+
+def range_query(sorted_vec, m1, m2):
+    return [c for c in sorted_vec if m1 <= c.modulus() < m2]
+
+if __name__ == "__main__":
+    vec = generate_vector(10)
+    print("原始向量:", [str(c) for c in vec])
+    
+    # 置乱、插入、删除、唯一化
+    random.shuffle(vec)
+    print("置乱后:", [str(c) for c in vec])
+    vec.insert(2, Complex(5, 5))
+    print("插入后:", [str(c) for c in vec])
+    del vec[2]
+    print("删除后:", [str(c) for c in vec])
+    vec = unique_vector(vec)
+    print("唯一化后:", [str(c) for c in vec])
+    
+    # 排序效率对比
+    ordered = sorted(vec)
+    reverse = sorted(vec, reverse=True)
+    cases = [("顺序", ordered), ("乱序", vec), ("逆序", reverse)]
+    
+    for case_name, case_vec in cases:
+        start = time.time()
+        merge_sort(case_vec.copy())
+        merge_time = time.time() - start
+        print(f"\n{case_name}归并排序时间:", merge_time)
+    
+    # 区间查询
+    sorted_vec = merge_sort(vec)
+    result = range_query(sorted_vec, 5, 10)
+    print("\n区间查询结果:", [str(c) for c in result])
