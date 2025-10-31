@@ -1,0 +1,182 @@
+#include <iostream>
+#include <vector>
+#include <random>
+#include <ctime>
+#include <cmath>
+#include <algorithm>
+#include <unordered_set>
+
+class Complex {
+public:
+    double real, imag;
+
+    Complex(double r = 0, double i = 0) : real(r), imag(i) {}
+
+    bool operator==(const Complex& other) const {
+        return real == other.real && imag == other.imag;
+    }
+
+    double modulus() const {
+        return std::sqrt(real * real + imag * imag);
+    }
+
+    bool operator<(const Complex& other) const {
+        double mod1 = modulus();
+        double mod2 = other.modulus();
+        if (mod1 != mod2) {
+            return mod1 < mod2;
+        } else {
+            return real < other.real;
+        }
+    }
+
+    struct Hash {
+        size_t operator()(const Complex& c) const {
+            size_t h1 = std::hash<double>()(c.real);
+            size_t h2 = std::hash<double>()(c.imag);
+            return h1 ^ (h2 << 1);
+        }
+    };
+};
+
+std::ostream& operator<<(std::ostream& os, const Complex& c) {
+    os << c.real << " + " << c.imag << "i";
+    return os;
+}
+
+// 冒泡排序
+std::vector<Complex> bubbleSort(std::vector<Complex> arr) {
+    int n = arr.size();
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n - i - 1; ++j) {
+            if (arr[j] < arr[j + 1]) {
+                std::swap(arr[j[j arr[j + 1]);
+            }
+        }
+    }
+    return arr;
+}
+void merge(std::vector<Complex>& arr, int l, int m, int r) {
+    std::vector<Complex> L(arr.begin() + l, arr.begin() + m + 1);
+    std::vector<Complex> R(arr.begin() + m + 1, arr.begin() + r + 1);
+    int i = 0, j = 0, k = l;
+    while (i < L.size() && j < R.size()) {
+        arr[k++] = (L[i] < R[j]) ? L[i++] : R[j++];
+    }
+    while (i < L.size()) {
+        arr[k++] = L[i++];
+    }
+    while (j < R.size()) {
+        arr[k++] = R[j++];
+    }
+}
+void mergeSort(std::vector<Complex>& arr, int l, int r) {
+    if (l < r) {
+        int m = l + (r - l) / 2;
+        mergeSort(arr, l, m);
+        mergeSort(arr, m + 1, r);
+        merge(arr, l, m, r);
+    }
+}
+std::vector<Complex> generateComplexVector(int n) {
+    std::vector<Complex> vec;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> dis(-10, 10);
+    for (int i = 0; i < n; ++i) {
+        vec.emplace_back(dis(gen), dis(gen));
+    }
+    return vec;
+}
+std::vector<Complex> uniqueVector(std::vector<Complex> vec) {
+    std::unordered_set<Complex, Complex::Hash> seen;
+    std::vector<Complex> unique;
+    for (const auto& c : vec) {
+        if (seen.insert(c).second) {
+            unique.push_back(c);
+        }
+    }
+    return unique;
+}
+std::vector<Complex> rangeQuery(const std::vector<Complex>& sortedVec, double m1, double m2) {
+    std::vector<Complex> result;
+    for (const auto& c : sortedVec) {
+        double mod = c.modulus();
+        if (mod >= m1 && mod < m2) {
+            result.push_back(c);
+        }
+    }
+    return result;
+}
+
+int main() {
+    std::vector<Complex> complexVec = generateComplexVector(10);
+    std::cout << "生成的复数向量:\n";
+    for (const auto& c : complexVec) {
+        std::cout << c << "\n";
+    }
+
+    std::vector<Complex> scrambled = complexVec;
+    std::random_shuffle(scrambled.begin(), scrambled.end());
+    std::cout << "\n置乱后的向量:\n";
+    for (const auto& c : scrambled) {
+        std::cout << c << "\n";
+    }
+
+
+    Complex target(3, 4);
+    bool found = std::find(scrambled.begin(), scrambled.end(), target) != scrambled.end();
+    std::cout << "\n元素 " << target << " 是否存在: " << (found ? "是" : "否") << "\n";
+
+    std::vector<Complex> inserted = scrambled;
+    inserted.insert(inserted.begin() + 2, Complex(5, 5));
+    std::cout << "\n插入后的向量:\n";
+    for (const auto& c : inserted) {
+        std::cout << c << "\n";
+
+    std::vector<Complex> deleted = inserted;
+    deleted.erase(deleted.begin() + 2);
+    std::cout << "\n删除后的向量:\n";
+    for (const auto& c : deleted) {
+        std::cout << c << "\n";
+    }
+
+    std::vector<Complex> unique = uniqueVector(deleted);
+    std::cout << "\n唯一化后的向量:\n";
+    for (const auto& c : unique) {
+        std::cout << c << "\n";
+    }
+
+    std::vector<Complex> ordered = unique;
+    std::sort(ordered.begin(), ordered.end());
+    std::vector<Complex> reverse = unique;
+    std::sort(reverse.begin(), reverse.end(), [](const Complex& a, const Complex& b) { return b < a; });
+
+    auto testSort = [](const std::string& name, std::vector<Complex> arr, 
+                       std::vector<Complex> (*sortFunc)(std::vector<Complex>), 
+                       void (*mergeFunc)(std::vector<Complex>&, int, int)) {
+        clock_t start = clock();
+        if (sortFunc) {
+            arr = sortFunc(arr);
+        } else if (mergeFunc) {
+            mergeFunc(arr, 0, arr.size() - 1);
+        }
+        double time = static_cast<double>(clock() - start) / CLOCKS_PER_SEC;
+        std::cout << "\n" << name << " 排序时间: " << time << " 秒\n";
+    };
+
+    testSort("顺序-冒泡", ordered, bubbleSort, nullptr);
+    testSort("顺序-归并", ordered, nullptr, mergeSort);
+    testSort("乱序-冒泡", scrambled, bubbleSort, nullptr);
+    testSort("乱序-归并", scrambled, nullptr, mergeSort);
+    testSort("逆序-冒泡", reverse, bubbleSort, nullptr);
+    testSort("逆序-归并", reverse, nullptr, mergeSort);
+
+    std::vector<Complex> queryResult = rangeQuery(ordered, 5, 10);
+    std::cout << "\n区间查询结果:\n";
+    for (const auto& c : queryResult) {
+        std::cout << c << "\n";
+    }
+
+    return 0;
+}

@@ -1,0 +1,104 @@
+#include <iostream>
+#include <vector>
+#include <string>
+#include <cctype>
+#include <cmath>
+#include <stdexcept>
+
+template <typename T>
+class Stack {
+private:
+    std::vector<T> data;
+public:
+    void push(const T& item) { data.push_back(item); }
+    T pop() { 
+        if (data.empty()) throw std::runtime_error("Stack empty");
+        T item = data.back();
+        data.pop_back();
+        return item;
+    }
+    T top() const { 
+        if (data.empty()) throw std::runtime_error("Stack empty");
+        return data.back();
+    }
+    bool empty() const { return data.empty(); }
+};
+
+class StringCalculator {
+private:
+    int precedence(char op) {
+        if (op == '+' || op == '-') return 1;
+        if (op == '*' || op == '/') return 2;
+        return 0;
+    }
+
+    std::vector<std::string> infixToPostfix(const std::string& expr) {
+        Stack<char> opStack;
+        std::vector<std::string> postfix;
+        std::string num;
+
+        for (char c : expr) {
+            if (isdigit(c) || c == '.') {
+                num += c;
+            } else {
+                if (!num.empty()) {
+                    postfix.push_back(num);
+                    num.clear();
+                }
+                if (c == '(') {
+                    opStack.push(c);
+                } else if (c == ')') {
+                    while (!opStack.empty() && opStack.top() != '(') {
+                        postfix.push_back(std::string(1, opStack.pop()));
+                    }
+                    if (!opStack.empty()) opStack.pop();
+                    else throw std::runtime_error("括号不匹配");
+                } else {
+                    while (!opStack.empty() && opStack.top() != '(' && 
+                           precedence(opStack.top()) >= precedence(c)) {
+                        postfix.push_back(std::string(1, opStack.pop()));
+                    }
+                    opStack.push(c);
+                }
+            }
+        }
+        if (!num.empty()) postfix.push_back(num);
+        while (!opStack.empty()) {
+            if (opStack.top() == '(') throw std::runtime_error("括号不匹配");
+            postfix.push_back(std::string(1, opStack.pop()));
+        }
+        return postfix;
+    }
+
+    double evaluatePostfix(const std::vector<std::string>& postfix) {
+        Stack<double> valStack;
+        for (const std::string& token : postfix) {
+            if (isdigit(token[0]) || (token.size() > 1 && isdigit(token[1]))) {
+                valStack.push(std::stod(token));
+            } else {
+                if (valStack.size() < 2) throw std::runtime_error("表达式无效");
+                double b = valStack.pop();
+                double a = valStack.pop();
+                if (token == "+") valStack.push(a + b);
+                else if (token == "-") valStack.push(a - b);
+                else if (token == "*") valStack.push(a * b);
+                else if (token == "/") {
+                    if (b == 0) throw std::runtime_error("除数不能为0");
+                    valStack.push(a / b);
+                }
+            }
+        }
+        if (valStack.size() != 1) throw std::runtime_error("表达式无效");
+        return valStack.top();
+    }
+
+public:
+    // 计算表达式
+    double calculate(const std::string& expr) {
+        try {
+            return evaluatePostfix(infixToPostfix(expr));
+        } catch (const std::exception& e) {
+            std::cout << "式子无效: " << e.what() << std::endl;
+            return NAN;
+        }
+    }
